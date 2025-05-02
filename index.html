@@ -2,98 +2,155 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Update Links Panel</title>
+  <title>Update Page</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
       background-color: #f4f4f4;
-      text-align: center;
     }
-    input, textarea {
+    textarea, input[type=text] {
       width: 100%;
       max-width: 500px;
       padding: 10px;
-      margin: 5px auto;
+      margin-bottom: 10px;
       font-size: 16px;
-      display: block;
     }
     button {
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
+      padding: 10px 15px;
+      margin-right: 5px;
+      font-size: 14px;
       cursor: pointer;
-      margin: 5px;
+    }
+    .meta-section {
+      background: #fff;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .post-block {
+      background: #fff;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      box-shadow: 0 0 3px rgba(0,0,0,0.1);
     }
     .msg {
       color: green;
-      margin-top: 10px;
+      margin-bottom: 10px;
     }
   </style>
 </head>
-<body>
-  <h2>Update Meta Content</h2>
-  <input type="text" id="title" placeholder="Title">
-  <input type="text" id="subtitle" placeholder="Subtitle">
-  <input type="text" id="image" placeholder="Image URL">
-  <input type="text" id="telegram" placeholder="Telegram Link">
-  <button onclick="updateMeta()">Save Meta</button>  <h2>Add New Post Link</h2>
-  <input type="text" id="postTitle" placeholder="Title (e.g. Post #1)">
-  <textarea id="postLink" placeholder="Paste your full URL here..."></textarea>
-  <button onclick="addPost()">Add Link</button>
-  <p class="msg" id="msg"></p>  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
-      authDomain: "trending-viral-links.firebaseapp.com",
-      databaseURL: "https://trending-viral-links-default-rtdb.firebaseio.com",
-      projectId: "trending-viral-links",
-      storageBucket: "trending-viral-links.appspot.com",
-      messagingSenderId: "803173160374",
-      appId: "1:803173160374:web:fc0bb2ab64564f59ee9d17"
-    };
+<body><h2>Update Meta Content</h2>
+<div class="meta-section">
+  <input type="text" id="metaTitle" placeholder="Page Title">
+  <input type="text" id="metaImage" placeholder="Image URL">
+  <input type="text" id="metaTelegram" placeholder="Telegram Link">
+  <button onclick="saveMeta()">Save Meta</button>
+</div><h2>Add New Post Link</h2>
+<input type="text" id="title" placeholder="Title (e.g. Post #1)">
+<textarea id="link" placeholder="Paste your full URL here..."></textarea>
+<button onclick="addPost()">Add Link</button>
+<p class="msg" id="msg"></p><h2>All Posts</h2>
+<div id="posts"></div><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script><script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
+    authDomain: "trending-viral-links.firebaseapp.com",
+    databaseURL: "https://trending-viral-links-default-rtdb.firebaseio.com",
+    projectId: "trending-viral-links",
+    storageBucket: "trending-viral-links.appspot.com",
+    messagingSenderId: "803173160374",
+    appId: "1:803173160374:web:fc0bb2ab64564f59ee9d17"
+  };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-    function updateMeta() {
-      const title = document.getElementById('title').value.trim();
-      const subtitle = document.getElementById('subtitle').value.trim();
-      const image = document.getElementById('image').value.trim();
-      const telegram = document.getElementById('telegram').value.trim();
+  const titleEl = document.getElementById('title');
+  const linkEl = document.getElementById('link');
+  const msg = document.getElementById('msg');
+  const postsDiv = document.getElementById('posts');
 
-      db.ref('meta').set({
-        title, subtitle, image, telegram
-      }).then(() => {
-        document.getElementById('msg').innerText = '✅ Meta updated successfully!';
-      });
+  const metaTitle = document.getElementById('metaTitle');
+  const metaImage = document.getElementById('metaImage');
+  const metaTelegram = document.getElementById('metaTelegram');
+
+  // Load meta values
+  db.ref('meta').once('value').then(snapshot => {
+    const data = snapshot.val() || {};
+    metaTitle.value = data.title || '';
+    metaImage.value = data.image || '';
+    metaTelegram.value = data.telegram || '';
+  });
+
+  function saveMeta() {
+    db.ref('meta').set({
+      title: metaTitle.value,
+      image: metaImage.value,
+      telegram: metaTelegram.value
+    }).then(() => alert('Meta content saved!'));
+  }
+
+  function addPost() {
+    const title = titleEl.value.trim();
+    const link = linkEl.value.trim();
+    if (!title || !link) {
+      msg.style.color = 'red';
+      msg.textContent = 'Both title and link are required!';
+      return;
     }
+    const key = title.replace(/\s+/g, '').toLowerCase();
+    db.ref('posts/' + key).set({ text: title, link: link }).then(() => {
+      msg.style.color = 'green';
+      msg.textContent = '✅ Link added successfully!';
+      titleEl.value = '';
+      linkEl.value = '';
+      loadPosts();
+    });
+  }
 
-    function addPost() {
-      const title = document.getElementById('postTitle').value.trim();
-      const link = document.getElementById('postLink').value.trim();
-      const msg = document.getElementById('msg');
+  function loadPosts() {
+    db.ref('posts').once('value').then(snapshot => {
+      postsDiv.innerHTML = '';
+      const data = snapshot.val();
+      if (data) {
+        Object.entries(data).forEach(([key, post]) => {
+          const container = document.createElement('div');
+          container.className = 'post-block';
 
-      if (!title || !link) {
-        msg.style.color = 'red';
-        msg.textContent = 'Both title and link are required!';
-        return;
-      }
+          const titleInput = document.createElement('input');
+          titleInput.value = post.text;
+          const linkInput = document.createElement('textarea');
+          linkInput.value = post.link;
 
-      const postKey = title.replace(/\s+/g, '').toLowerCase();
-      db.ref('posts/' + postKey).set({ text: title, link: link })
-        .then(() => {
-          msg.style.color = 'green';
-          msg.textContent = '✅ Link added successfully!';
-          document.getElementById('postTitle').value = '';
-          document.getElementById('postLink').value = '';
-        })
-        .catch(error => {
-          msg.style.color = 'red';
-          msg.textContent = 'Error: ' + error.message;
+          const saveBtn = document.createElement('button');
+          saveBtn.textContent = 'Save';
+          saveBtn.onclick = () => {
+            db.ref('posts/' + key).set({ text: titleInput.value, link: linkInput.value })
+              .then(() => alert('Post updated'));
+          };
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.textContent = 'Delete';
+          deleteBtn.onclick = () => {
+            db.ref('posts/' + key).remove()
+              .then(() => {
+                alert('Deleted');
+                loadPosts();
+              });
+          };
+
+          container.appendChild(titleInput);
+          container.appendChild(linkInput);
+          container.appendChild(saveBtn);
+          container.appendChild(deleteBtn);
+          postsDiv.appendChild(container);
         });
-    }
-  </script></body>
+      }
+    });
+  }
+
+  loadPosts();
+</script></body>
 </html>
