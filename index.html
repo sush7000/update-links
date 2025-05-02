@@ -1,137 +1,177 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Update Meta & Posts</title>
+  <title>Update Page</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
+      background: #f9f9f9;
       margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-    }
-    .container {
-      width: 100%;
-      max-width: 500px;
-      background: white;
       padding: 20px;
-      margin: 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     h2 {
-      text-align: center;
+      margin-top: 20px;
       color: #333;
+    }
+    .box {
+      width: 95%;
+      max-width: 600px;
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 10px;
     }
     input, textarea {
       width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      border: 1px solid #ccc;
-      border-radius: 6px;
       font-size: 16px;
+      margin: 5px 0 15px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
     }
     button {
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      margin: 8px 0;
+      padding: 10px 15px;
+      margin: 5px;
       border: none;
+      font-size: 16px;
       border-radius: 6px;
       cursor: pointer;
     }
-    .save-btn { background-color: #4CAF50; color: white; }
-    .delete-btn { background-color: #f44336; color: white; }
-    .reorder-btn { background-color: #9C27B0; color: white; width: 48%; }
-    .action-row { display: flex; justify-content: space-between; gap: 4%; }
-    .search-box {
-      margin-top: 20px;
+    .add { background: #4CAF50; color: white; }
+    .save { background: #2196F3; color: white; }
+    .del { background: #f44336; color: white; }
+    .reorder { background: #9C27B0; color: white; }
+    .metaBtn { background: #555; color: white; }
+    .search {
+      background: #e0e0e0;
       margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 8px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Update Meta Content</h2>
-    <input type="text" id="metaTitle" placeholder="Page Title">
-    <input type="text" id="metaImage" placeholder="Image URL">
-    <input type="text" id="metaTelegram" placeholder="Telegram Link">
-    <button class="save-btn" onclick="saveMeta()">Save Meta</button><h2>Add New Post Link</h2>
-<input type="text" id="title" placeholder="Title (e.g. Post #1)">
-<textarea id="link" placeholder="Paste your full URL here..."></textarea>
-<button class="save-btn" onclick="addPost()">Add Link</button>
+
+<h2>Update Meta Content</h2>
+<div class="box">
+  <input type="text" id="metaTitle" placeholder="Page Title">
+  <input type="text" id="metaImage" placeholder="Image URL">
+  <input type="text" id="metaTelegram" placeholder="Telegram Link">
+  <button class="metaBtn" onclick="saveMeta()">Save Meta</button>
+</div>
+
+<h2>Add New Post Link</h2>
+<div class="box">
+  <input type="text" id="title" placeholder="Title (e.g. Post #1)">
+  <textarea id="link" placeholder="Paste your full URL here..."></textarea>
+  <button class="add" onclick="addPost()">Add Link</button>
+</div>
 
 <h2>Search Posts</h2>
-<input type="text" id="searchInput" class="search-box" placeholder="Search by title or link..." oninput="renderPosts()">
+<div class="box">
+  <input class="search" type="text" id="searchInput" placeholder="Search by title or link..." oninput="filterPosts()">
+</div>
 
 <h2>All Posts</h2>
-<div id="postList"></div>
+<div id="posts" class="box"></div>
 
-  </div>  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
-      authDomain: "trending-viral-links.firebaseapp.com",
-      databaseURL: "https://trending-viral-links-default-rtdb.firebaseio.com",
-      projectId: "trending-viral-links",
-      storageBucket: "trending-viral-links.appspot.com",
-      messagingSenderId: "803173160374",
-      appId: "1:803173160374:web:fc0bb2ab64564f59ee9d17"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
+    authDomain: "trending-viral-links.firebaseapp.com",
+    databaseURL: "https://trending-viral-links-default-rtdb.firebaseio.com",
+    projectId: "trending-viral-links",
+    storageBucket: "trending-viral-links.appspot.com",
+    messagingSenderId: "803173160374",
+    appId: "1:803173160374:web:fc0bb2ab64564f59ee9d17"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-    function saveMeta() {
-      const title = document.getElementById('metaTitle').value.trim();
-      const image = document.getElementById('metaImage').value.trim();
-      const telegram = document.getElementById('metaTelegram').value.trim();
-      db.ref('meta').set({ title, image, telegram });
-    }
+  const postsDiv = document.getElementById("posts");
+  const searchInput = document.getElementById("searchInput");
 
-    function addPost() {
-      const title = document.getElementById('title').value.trim();
-      const link = document.getElementById('link').value.trim();
-      if (!title || !link) return alert("Both fields required!");
-      const postKey = Date.now();
-      db.ref('posts/' + postKey).set({ title, link });
-      document.getElementById('title').value = '';
-      document.getElementById('link').value = '';
-    }
+  function saveMeta() {
+    db.ref("meta").set({
+      title: document.getElementById("metaTitle").value,
+      image: document.getElementById("metaImage").value,
+      telegram: document.getElementById("metaTelegram").value
+    }).then(() => alert("Meta updated successfully!"));
+  }
 
-    function renderPosts() {
-      const search = document.getElementById('searchInput').value.trim().toLowerCase();
-      db.ref('posts').once('value', snapshot => {
-        const data = snapshot.val() || {};
-        const list = document.getElementById('postList');
-        list.innerHTML = '';
-        Object.entries(data).forEach(([id, post], i) => {
-          if (!post.title.toLowerCase().includes(search) && !post.link.toLowerCase().includes(search)) return;
-          const box = document.createElement('div');
-          box.innerHTML = `
-            <input value="${post.title}" id="title-${id}">
-            <textarea id="link-${id}">${post.link}</textarea><div class="action-row">
-          <button class="save-btn" onclick="saveEdit('${id}')">Save</button>
-          <button class="delete-btn" onclick="deletePost('${id}')">Delete</button>
+  function addPost() {
+    const title = document.getElementById("title").value.trim();
+    const link = document.getElementById("link").value.trim();
+    if (!title || !link) return alert("Both fields required!");
+    const id = Date.now().toString();
+    db.ref("posts/" + id).set({ text: title, link });
+    document.getElementById("title").value = "";
+    document.getElementById("link").value = "";
+  }
+
+  function loadMeta() {
+    db.ref("meta").once("value").then(snapshot => {
+      const meta = snapshot.val();
+      if (meta) {
+        document.getElementById("metaTitle").value = meta.title || "";
+        document.getElementById("metaImage").value = meta.image || "";
+        document.getElementById("metaTelegram").value = meta.telegram || "";
+      }
+    });
+  }
+
+  function renderPosts(data) {
+    postsDiv.innerHTML = '';
+    Object.entries(data || {}).forEach(([id, post]) => {
+      const div = document.createElement("div");
+      div.innerHTML = `
+        <input type="text" value="${post.text}" id="t_${id}">
+        <textarea id="l_${id}">${post.link}</textarea>
+        <div>
+          <button class="save" onclick="savePost('${id}')">Save</button>
+          <button class="del" onclick="deletePost('${id}')">Delete</button>
         </div>
       `;
-      list.appendChild(box);
+      postsDiv.appendChild(div);
     });
-  });
-}
+  }
 
-function saveEdit(id) {
-  const title = document.getElementById('title-' + id).value.trim();
-  const link = document.getElementById('link-' + id).value.trim();
-  db.ref('posts/' + id).set({ title, link });
-}
+  function savePost(id) {
+    const text = document.getElementById("t_" + id).value;
+    const link = document.getElementById("l_" + id).value;
+    db.ref("posts/" + id).set({ text, link });
+  }
 
-function deletePost(id) {
-  if (confirm('Delete this post?')) db.ref('posts/' + id).remove();
-}
+  function deletePost(id) {
+    if (confirm("Delete this post?")) {
+      db.ref("posts/" + id).remove();
+    }
+  }
 
-renderPosts();
+  function filterPosts() {
+    const q = searchInput.value.toLowerCase();
+    db.ref("posts").once("value").then(snap => {
+      const all = snap.val();
+      const filtered = {};
+      Object.entries(all || {}).forEach(([id, p]) => {
+        if (p.text.toLowerCase().includes(q) || p.link.toLowerCase().includes(q)) {
+          filtered[id] = p;
+        }
+      });
+      renderPosts(filtered);
+    });
+  }
 
-  </script>
+  db.ref("posts").on("value", snap => renderPosts(snap.val()));
+  loadMeta();
+</script>
 </body>
 </html>
