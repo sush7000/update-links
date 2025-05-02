@@ -1,91 +1,100 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Update Page</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
       margin: 0;
-      padding: 0;
+      background: #f4f4f4;
+      font-family: Arial, sans-serif;
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      justify-content: center;
     }
     .container {
       width: 100%;
-      max-width: 500px;
+      max-width: 400px;
       padding: 20px;
+      text-align: center;
     }
     h2 {
-      text-align: center;
-      color: #333;
-    }
-    .card {
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      margin-bottom: 20px;
-      padding: 20px;
+      font-size: 20px;
+      margin: 0 0 10px;
     }
     input, textarea {
       width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 6px;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 8px;
       border: 1px solid #ccc;
       font-size: 16px;
     }
     button {
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #28a745;
-      color: white;
+      padding: 10px 16px;
+      font-size: 15px;
       border: none;
-      border-radius: 5px;
+      border-radius: 8px;
+      margin: 5px 5px 5px 0;
       cursor: pointer;
     }
-    .btn-dark {
-      background-color: #333;
-    }
-    .post-card {
+    .save-btn { background: #007bff; color: white; }
+    .delete-btn { background: #dc3545; color: white; }
+    .reorder-btn { background: #6f42c1; color: white; }
+    .edit-meta-btn { background: #444; color: white; margin-bottom: 10px; }
+    .box {
       background: white;
-      padding: 10px;
-      border-radius: 10px;
-      margin-bottom: 15px;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .search-input {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="card">
+    <div class="box">
       <h2>Update Meta Content</h2>
-      <button id="toggleMeta" class="btn-dark">Edit Meta</button>
-      <div id="metaForm" style="display: none;">
-        <input type="text" id="metaTitle" placeholder="Page Title">
-        <input type="text" id="metaImage" placeholder="Image URL">
-        <input type="text" id="metaTelegram" placeholder="Telegram Link">
-        <button id="saveMeta">Save Meta</button>
+      <button class="edit-meta-btn" onclick="toggleMetaEdit()">Edit Meta</button>
+      <div id="metaFields" style="display:none;">
+        <input type="text" id="metaTitle" placeholder="Page Title" />
+        <input type="text" id="metaImage" placeholder="Image URL" />
+        <input type="text" id="metaTelegram" placeholder="Telegram Link" />
+        <input type="text" id="metaCaption" placeholder="Caption" />
+        <button class="save-btn" onclick="saveMeta()">Save Meta</button>
       </div>
-    </div><div class="card">
-  <h2>Add New Post Link</h2>
-  <input type="text" id="title" placeholder="Title (e.g. Post #1)">
-  <textarea id="link" placeholder="Paste your full URL here..."></textarea>
-  <button onclick="addPost()">Add Link</button>
-</div>
+    </div>
 
-<div class="card">
-  <h2>Search Posts</h2>
-  <input type="text" id="searchBox" placeholder="Search by title or link...">
-</div>
+    <div class="box">
+      <h2>Add New Post Link</h2>
+      <input type="text" id="title" placeholder="Title (e.g. Post #1)" />
+      <textarea id="link" placeholder="Paste your full URL here..."></textarea>
+      <input type="text" id="image" placeholder="Image Preview URL (optional)" />
+      <button class="save-btn" onclick="addPost()">Add Link</button>
+    </div>
 
-<div class="card">
-  <h2>All Posts</h2>
-  <div id="posts"></div>
-</div>
+    <div class="box">
+      <h2>Search Posts</h2>
+      <input type="text" id="search" class="search-input" placeholder="Search by title or link..." />
+    </div>
 
-  </div>  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>  <script>
+    <div id="posts"></div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
       authDomain: "trending-viral-links.firebaseapp.com",
@@ -98,77 +107,127 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const metaRef = db.ref("meta");
-    const postsRef = db.ref("posts");
+    const postsContainer = document.getElementById("posts");
+    let allPosts = [];
 
-    document.getElementById("toggleMeta").onclick = () => {
-      const metaForm = document.getElementById("metaForm");
-      metaForm.style.display = metaForm.style.display === "none" ? "block" : "none";
-    };
+    function renderPosts(posts) {
+      postsContainer.innerHTML = "";
+      posts.forEach((post, index) => {
+        const box = document.createElement("div");
+        box.className = "box";
 
-    document.getElementById("saveMeta").onclick = function () {
-      const title = document.getElementById("metaTitle").value.trim();
-      const image = document.getElementById("metaImage").value.trim();
-      const telegram = document.getElementById("metaTelegram").value.trim();
+        const titleInput = document.createElement("input");
+        titleInput.value = post.text;
 
-      metaRef.set({ title, image, telegram }).then(() => {
-        alert("Meta saved successfully!");
+        const linkInput = document.createElement("textarea");
+        linkInput.value = post.link;
+
+        const imageInput = document.createElement("input");
+        imageInput.value = post.image || "";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.textContent = "Save";
+        saveBtn.className = "save-btn";
+        saveBtn.onclick = () => {
+          db.ref("posts/" + post.key).set({
+            text: titleInput.value,
+            link: linkInput.value,
+            image: imageInput.value
+          });
+        };
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.className = "delete-btn";
+        deleteBtn.onclick = () => db.ref("posts/" + post.key).remove();
+
+        const upBtn = document.createElement("button");
+        upBtn.textContent = "↑";
+        upBtn.className = "reorder-btn";
+        upBtn.onclick = () => movePost(index, index - 1);
+
+        const downBtn = document.createElement("button");
+        downBtn.textContent = "↓";
+        downBtn.className = "reorder-btn";
+        downBtn.onclick = () => movePost(index, index + 1);
+
+        box.appendChild(titleInput);
+        box.appendChild(linkInput);
+        box.appendChild(imageInput);
+        box.appendChild(saveBtn);
+        box.appendChild(deleteBtn);
+        box.appendChild(upBtn);
+        box.appendChild(downBtn);
+
+        postsContainer.appendChild(box);
       });
-    };
+    }
+
+    function movePost(from, to) {
+      if (to < 0 || to >= allPosts.length) return;
+      const reordered = [...allPosts];
+      const [moved] = reordered.splice(from, 1);
+      reordered.splice(to, 0, moved);
+      const updates = {};
+      reordered.forEach((p, i) => {
+        updates[p.key] = { text: p.text, link: p.link, image: p.image || "" };
+      });
+      db.ref("posts").set(updates);
+    }
 
     function addPost() {
-      const title = document.getElementById('title').value.trim();
-      const link = document.getElementById('link').value.trim();
-      if (!title || !link) return;
-      const key = title.replace(/\s+/g, '').toLowerCase();
-      postsRef.child(key).set({ text: title, link: link }).then(loadPosts);
-      document.getElementById('title').value = '';
-      document.getElementById('link').value = '';
+      const title = document.getElementById("title").value.trim();
+      const link = document.getElementById("link").value.trim();
+      const image = document.getElementById("image").value.trim();
+      if (!title || !link) return alert("Title and link required");
+      const newKey = db.ref().child('posts').push().key;
+      db.ref("posts/" + newKey).set({ text: title, link, image });
+      document.getElementById("title").value = '';
+      document.getElementById("link").value = '';
+      document.getElementById("image").value = '';
     }
 
-    function loadPosts() {
-      postsRef.once("value", snapshot => {
-        const postsDiv = document.getElementById("posts");
-        postsDiv.innerHTML = "";
-        const data = snapshot.val();
-        if (!data) return;
+    db.ref("posts").on("value", (snap) => {
+      const data = snap.val();
+      allPosts = [];
+      if (data) {
         Object.keys(data).forEach(key => {
-          const post = data[key];
-          const card = document.createElement("div");
-          card.className = "post-card";
-
-          const title = document.createElement("input");
-          title.value = post.text;
-          const link = document.createElement("textarea");
-          link.value = post.link;
-          const saveBtn = document.createElement("button");
-          saveBtn.innerText = "Save";
-          saveBtn.onclick = () => {
-            postsRef.child(key).set({ text: title.value, link: link.value }).then(loadPosts);
-          };
-          const delBtn = document.createElement("button");
-          delBtn.innerText = "Delete";
-          delBtn.onclick = () => {
-            postsRef.child(key).remove().then(loadPosts);
-          };
-
-          card.appendChild(title);
-          card.appendChild(link);
-          card.appendChild(saveBtn);
-          card.appendChild(delBtn);
-          postsDiv.appendChild(card);
+          allPosts.push({ ...data[key], key });
         });
-      });
-    }
-
-    document.getElementById("searchBox").addEventListener("input", function () {
-      const query = this.value.toLowerCase();
-      Array.from(document.getElementById("posts").children).forEach(div => {
-        const text = div.innerText.toLowerCase();
-        div.style.display = text.includes(query) ? "block" : "none";
-      });
+        renderPosts(allPosts);
+      }
     });
 
-    loadPosts();
-  </script></body>
+    document.getElementById("search").addEventListener("input", (e) => {
+      const query = e.target.value.toLowerCase();
+      const filtered = allPosts.filter(post =>
+        post.text.toLowerCase().includes(query) || post.link.toLowerCase().includes(query)
+      );
+      renderPosts(filtered);
+    });
+
+    function toggleMetaEdit() {
+      const section = document.getElementById("metaFields");
+      section.style.display = section.style.display === "none" ? "block" : "none";
+      if (section.style.display === "block") {
+        db.ref("meta").once("value", (snap) => {
+          const meta = snap.val() || {};
+          document.getElementById("metaTitle").value = meta.title || '';
+          document.getElementById("metaImage").value = meta.image || '';
+          document.getElementById("metaTelegram").value = meta.telegram || '';
+          document.getElementById("metaCaption").value = meta.caption || '';
+        });
+      }
+    }
+
+    function saveMeta() {
+      const title = document.getElementById("metaTitle").value;
+      const image = document.getElementById("metaImage").value;
+      const telegram = document.getElementById("metaTelegram").value;
+      const caption = document.getElementById("metaCaption").value;
+      db.ref("meta").set({ title, image, telegram, caption });
+      alert("Meta content updated!");
+    }
+  </script>
+</body>
 </html>
