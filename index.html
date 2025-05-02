@@ -1,70 +1,62 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Instagram Viral Videos</title>
+  <title>Manage Posts</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
+    body {
       font-family: Arial, sans-serif;
-      background-color: #f2f2f2;
-      text-align: center;
-    }
-    .container {
       padding: 20px;
+      background: #f4f4f4;
     }
-    .profile-pic {
-      width: 140px;
-      height: 140px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin-top: 20px;
+    h2 {
+      color: #333;
     }
-    h1 {
-      font-size: 28px;
-      margin: 10px 0;
+    input, textarea {
+      width: 100%;
+      max-width: 500px;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-size: 16px;
     }
-    p {
-      font-size: 18px;
-      margin: 5px 0 20px 0;
+    button {
+      padding: 8px 16px;
+      margin: 5px 3px;
+      font-size: 14px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
-    .telegram-btn, .btn {
-      display: block;
-      width: 95%;
-      max-width: 450px;
-      margin: 12px auto;
-      padding: 18px;
-      text-decoration: none;
-      font-size: 22px;
-      font-weight: bold;
+    .save { background-color: #2196F3; color: white; }
+    .delete { background-color: #f44336; color: white; }
+    .up, .down { background-color: #9c27b0; color: white; }
+    .add { background-color: #4CAF50; color: white; margin-top: 10px; }
+    .post-box {
+      background: white;
+      padding: 15px;
+      margin-bottom: 15px;
       border-radius: 10px;
-      box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
-    }
-    .telegram-btn {
-      background-color: #0088cc;
-      color: white;
-    }
-    .telegram-btn:hover {
-      background-color: #0070a8;
-    }
-    .btn {
-      background-color: #4CAF50;
-      color: white;
-    }
-    .btn:hover {
-      background-color: #45a049;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      max-width: 500px;
     }
   </style>
 </head>
-<body><div class="container">
-  <img src="https://i.imgur.com/Cv0Rj5z.png" alt="Profile Pic" class="profile-pic">
-  <h1>INSTAGRAM VIRAL VIDEOS</h1>
-  <p>🥵👇 ALL VIDEOS LINK FROM INSTAGRAM BIO 👇🥵</p>  <!-- Telegram Join Button --><a href="https://t.me/YourTelegramLink" target="_blank" class="telegram-btn">📢 Join Telegram For Random Videos 📢</a>
+<body>
 
-  <!-- Dynamic Buttons -->  <div id="posts"></div>
-</div><!-- Firebase --><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script><script>
+<h2>Add New Post Link</h2>
+<input type="text" id="title" placeholder="Title (e.g. Post #1)">
+<textarea id="link" placeholder="Paste your full URL here..."></textarea>
+<button class="add" onclick="addPost()">Add Link</button>
+<p id="msg" style="color:green;"></p>
+
+<h2>All Posts</h2>
+<div id="posts"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script>
   const firebaseConfig = {
     apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
     authDomain: "trending-viral-links.firebaseapp.com",
@@ -77,26 +69,78 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
+  const postsRef = db.ref("posts");
+  const postsDiv = document.getElementById("posts");
+  const msg = document.getElementById("msg");
 
-  const postsContainer = document.getElementById('posts');
+  function renderPosts(snapshot) {
+    const posts = [];
+    snapshot.forEach(child => {
+      posts.push({ key: child.key, ...child.val() });
+    });
+    postsDiv.innerHTML = '';
+    posts.forEach((post, index) => {
+      const box = document.createElement('div');
+      box.className = 'post-box';
+      box.innerHTML = `
+        <input type="text" value="${post.text}" id="title-${post.key}">
+        <textarea id="link-${post.key}">${post.link}</textarea>
+        <button class="save" onclick="savePost('${post.key}')">Save</button>
+        <button class="delete" onclick="deletePost('${post.key}')">Delete</button>
+        <button class="up" onclick="movePost(${index}, -1)">↑</button>
+        <button class="down" onclick="movePost(${index}, 1)">↓</button>
+      `;
+      postsDiv.appendChild(box);
+    });
+    window.currentPosts = posts;
+  }
 
-  db.ref('posts').on('value', (snapshot) => {
-    postsContainer.innerHTML = '';
-    const data = snapshot.val();
-    if (data) {
-      Object.keys(data).forEach(key => {
-        const post = data[key];
-        const a = document.createElement('a');
-        a.href = post.link;
-        a.target = '_blank';
-        a.className = 'btn';
-        a.innerText = post.text;
-        a.onclick = () => {
-          db.ref('posts/' + key + '/views').transaction(current => (current || 0) + 1);
-        };
-        postsContainer.appendChild(a);
-      });
+  function addPost() {
+    const title = document.getElementById("title").value.trim();
+    const link = document.getElementById("link").value.trim();
+    if (!title || !link) {
+      msg.style.color = "red";
+      msg.innerText = "Both fields are required!";
+      return;
     }
-  });
-</script></body>
+    const newRef = postsRef.push();
+    newRef.set({ text: title, link: link }).then(() => {
+      msg.style.color = "green";
+      msg.innerText = "✅ Link added successfully!";
+      document.getElementById("title").value = '';
+      document.getElementById("link").value = '';
+    });
+  }
+
+  function savePost(key) {
+    const title = document.getElementById(`title-${key}`).value.trim();
+    const link = document.getElementById(`link-${key}`).value.trim();
+    postsRef.child(key).update({ text: title, link: link });
+  }
+
+  function deletePost(key) {
+    if (confirm("Delete this post?")) {
+      postsRef.child(key).remove();
+    }
+  }
+
+  function movePost(index, direction) {
+    const posts = [...window.currentPosts];
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= posts.length) return;
+    const temp = posts[index];
+    posts[index] = posts[newIndex];
+    posts[newIndex] = temp;
+
+    const updates = {};
+    posts.forEach(p => {
+      updates[p.key] = { text: p.text, link: p.link };
+    });
+    postsRef.set(updates);
+  }
+
+  postsRef.on("value", renderPosts);
+</script>
+
+</body>
 </html>
