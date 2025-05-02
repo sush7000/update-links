@@ -1,60 +1,57 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Manage Posts</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Viral Links</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
-      background: #f4f4f4;
+      background-color: #f4f4f4;
     }
-    h2 { color: #333; }
-    input, textarea {
+    textarea, input[type="text"] {
       width: 100%;
       max-width: 500px;
-      padding: 10px;
       margin-bottom: 10px;
       font-size: 16px;
+      padding: 10px;
     }
     button {
-      padding: 8px 16px;
-      margin: 5px 3px;
-      font-size: 14px;
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 4px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
+    .add { background-color: #4CAF50; color: white; }
     .save { background-color: #2196F3; color: white; }
     .delete { background-color: #f44336; color: white; }
-    .up, .down { background-color: #9c27b0; color: white; }
-    .add { background-color: #4CAF50; color: white; margin-top: 10px; }
+    .up, .down { background-color: #9C27B0; color: white; }
     .post-box {
       background: white;
       padding: 15px;
       margin-bottom: 15px;
-      border-radius: 10px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    #search {
+      width: 100%;
       max-width: 500px;
+      padding: 10px;
+      margin-bottom: 20px;
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
-
 <h2>Add New Post Link</h2>
 <input type="text" id="title" placeholder="Title (e.g. Post #1)">
 <textarea id="link" placeholder="Paste your full URL here..."></textarea>
 <button class="add" onclick="addPost()">Add Link</button>
-<p id="msg" style="color:green;"></p>
-
-<h2>All Posts</h2>
-<div id="posts"></div>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script>
+<p id="msg"></p><h2>Search Posts</h2>
+<input type="text" id="search" placeholder="Search by title or link..."><h2>All Posts</h2>
+<div id="posts"></div><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script><script>
   const firebaseConfig = {
     apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
     authDomain: "trending-viral-links.firebaseapp.com",
@@ -64,83 +61,87 @@
     messagingSenderId: "803173160374",
     appId: "1:803173160374:web:fc0bb2ab64564f59ee9d17"
   };
-
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
-  const postsRef = db.ref("posts");
-  const postsDiv = document.getElementById("posts");
-  const msg = document.getElementById("msg");
 
+  const postsDiv = document.getElementById('posts');
+  const msg = document.getElementById('msg');
   let currentPosts = [];
 
-  function renderPosts(snapshot) {
-    currentPosts = [];
-    snapshot.forEach(child => {
-      currentPosts.push({ key: child.key, ...child.val() });
-    });
-    postsDiv.innerHTML = '';
-    currentPosts.forEach((post, index) => {
-      const box = document.createElement('div');
-      box.className = 'post-box';
-      box.innerHTML = `
-        <input type="text" value="${post.text}" id="title-${post.key}">
-        <textarea id="link-${post.key}">${post.link}</textarea>
-        <button class="save" onclick="savePost('${post.key}')">Save</button>
-        <button class="delete" onclick="deletePost('${post.key}')">Delete</button>
-        <button class="up" onclick="movePost(${index}, -1)">↑</button>
-        <button class="down" onclick="movePost(${index}, 1)">↓</button>
-      `;
-      postsDiv.appendChild(box);
-    });
-  }
-
   function addPost() {
-    const title = document.getElementById("title").value.trim();
-    const link = document.getElementById("link").value.trim();
+    const title = document.getElementById('title').value.trim();
+    const link = document.getElementById('link').value.trim();
     if (!title || !link) {
-      msg.style.color = "red";
-      msg.innerText = "Both fields are required!";
+      msg.style.color = 'red';
+      msg.textContent = 'Both fields required';
       return;
     }
-    const newRef = postsRef.push();
-    newRef.set({ text: title, link: link }).then(() => {
-      msg.style.color = "green";
-      msg.innerText = "✅ Link added successfully!";
-      document.getElementById("title").value = '';
-      document.getElementById("link").value = '';
+    const key = Date.now().toString();
+    db.ref('posts/' + key).set({ text: title, link: link }).then(() => {
+      msg.style.color = 'green';
+      msg.textContent = '✅ Link added successfully!';
+      document.getElementById('title').value = '';
+      document.getElementById('link').value = '';
     });
   }
 
   function savePost(key) {
     const title = document.getElementById(`title-${key}`).value.trim();
     const link = document.getElementById(`link-${key}`).value.trim();
-    postsRef.child(key).update({ text: title, link: link });
+    if (!title || !link) return alert('Empty fields');
+    db.ref('posts/' + key).set({ text: title, link: link });
   }
 
   function deletePost(key) {
     if (confirm("Delete this post?")) {
-      postsRef.child(key).remove();
+      db.ref('posts/' + key).remove();
     }
   }
 
   function movePost(index, direction) {
     const newIndex = index + direction;
     if (newIndex < 0 || newIndex >= currentPosts.length) return;
+    const temp = currentPosts[index];
+    currentPosts[index] = currentPosts[newIndex];
+    currentPosts[newIndex] = temp;
 
-    // Swap elements
-    const reordered = [...currentPosts];
-    [reordered[index], reordered[newIndex]] = [reordered[newIndex], reordered[index]];
-
-    // Rewrite all to Firebase
     const updates = {};
-    reordered.forEach(p => {
-      updates[p.key] = { text: p.text, link: p.link };
+    currentPosts.forEach(post => {
+      updates[post.key] = { text: post.text, link: post.link };
     });
-    postsRef.set(updates);
+    db.ref('posts').set(updates);
   }
 
-  postsRef.on("value", renderPosts);
-</script>
+  function renderPosts(snapshot) {
+    currentPosts = [];
+    snapshot.forEach(child => {
+      currentPosts.push({ key: child.key, ...child.val() });
+    });
+    filterAndRender();
+  }
+
+  function filterAndRender() {
+    const searchTerm = document.getElementById("search").value.toLowerCase();
+    postsDiv.innerHTML = '';
+    currentPosts.filter(p =>
+      p.text.toLowerCase().includes(searchTerm) ||
+      p.link.toLowerCase().includes(searchTerm)
+    ).forEach((post, index) => {
+      const box = document.createElement('div');
+      box.className = 'post-box';
+      box.innerHTML = `
+        <input type="text" value="${post.text}" id="title-${post.key}">
+        <textarea id="link-${post.key}">${post.link}</textarea><button class="save" onclick="savePost('${post.key}')">Save</button>
+    <button class="delete" onclick="deletePost('${post.key}')">Delete</button>
+    <button class="up" onclick="movePost(${index}, -1)">↑</button>
+    <button class="down" onclick="movePost(${index}, 1)">↓</button>
+  `;
+  postsDiv.appendChild(box);
+});
+
+}
+
+db.ref('posts').on('value', renderPosts); document.getElementById("search").addEventListener("input", filterAndRender); </script>
 
 </body>
 </html>
