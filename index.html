@@ -2,155 +2,136 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Update Page</title>
+  <title>Update Meta & Posts</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 20px;
       background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
     }
-    textarea, input[type=text] {
+    .container {
       width: 100%;
       max-width: 500px;
-      padding: 10px;
-      margin-bottom: 10px;
+      background: white;
+      padding: 20px;
+      margin: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      border-radius: 10px;
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
       font-size: 16px;
     }
     button {
-      padding: 10px 15px;
-      margin-right: 5px;
-      font-size: 14px;
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 6px;
       cursor: pointer;
     }
-    .meta-section {
-      background: #fff;
-      padding: 15px;
-      margin-bottom: 20px;
-      border-radius: 5px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-    }
-    .post-block {
-      background: #fff;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 5px;
-      box-shadow: 0 0 3px rgba(0,0,0,0.1);
-    }
-    .msg {
-      color: green;
+    .save-btn { background-color: #4CAF50; color: white; }
+    .delete-btn { background-color: #f44336; color: white; }
+    .reorder-btn { background-color: #9C27B0; color: white; width: 48%; }
+    .action-row { display: flex; justify-content: space-between; gap: 4%; }
+    .search-box {
+      margin-top: 20px;
       margin-bottom: 10px;
     }
   </style>
 </head>
-<body><h2>Update Meta Content</h2>
-<div class="meta-section">
-  <input type="text" id="metaTitle" placeholder="Page Title">
-  <input type="text" id="metaImage" placeholder="Image URL">
-  <input type="text" id="metaTelegram" placeholder="Telegram Link">
-  <button onclick="saveMeta()">Save Meta</button>
-</div><h2>Add New Post Link</h2>
+<body>
+  <div class="container">
+    <h2>Update Meta Content</h2>
+    <input type="text" id="metaTitle" placeholder="Page Title">
+    <input type="text" id="metaImage" placeholder="Image URL">
+    <input type="text" id="metaTelegram" placeholder="Telegram Link">
+    <button class="save-btn" onclick="saveMeta()">Save Meta</button><h2>Add New Post Link</h2>
 <input type="text" id="title" placeholder="Title (e.g. Post #1)">
 <textarea id="link" placeholder="Paste your full URL here..."></textarea>
-<button onclick="addPost()">Add Link</button>
-<p class="msg" id="msg"></p><h2>All Posts</h2>
-<div id="posts"></div><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script><script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
-    authDomain: "trending-viral-links.firebaseapp.com",
-    databaseURL: "https://trending-viral-links-default-rtdb.firebaseio.com",
-    projectId: "trending-viral-links",
-    storageBucket: "trending-viral-links.appspot.com",
-    messagingSenderId: "803173160374",
-    appId: "1:803173160374:web:fc0bb2ab64564f59ee9d17"
-  };
+<button class="save-btn" onclick="addPost()">Add Link</button>
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+<h2>Search Posts</h2>
+<input type="text" id="searchInput" class="search-box" placeholder="Search by title or link..." oninput="renderPosts()">
 
-  const titleEl = document.getElementById('title');
-  const linkEl = document.getElementById('link');
-  const msg = document.getElementById('msg');
-  const postsDiv = document.getElementById('posts');
+<h2>All Posts</h2>
+<div id="postList"></div>
 
-  const metaTitle = document.getElementById('metaTitle');
-  const metaImage = document.getElementById('metaImage');
-  const metaTelegram = document.getElementById('metaTelegram');
+  </div>  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
+      authDomain: "trending-viral-links.firebaseapp.com",
+      databaseURL: "https://trending-viral-links-default-rtdb.firebaseio.com",
+      projectId: "trending-viral-links",
+      storageBucket: "trending-viral-links.appspot.com",
+      messagingSenderId: "803173160374",
+      appId: "1:803173160374:web:fc0bb2ab64564f59ee9d17"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-  // Load meta values
-  db.ref('meta').once('value').then(snapshot => {
-    const data = snapshot.val() || {};
-    metaTitle.value = data.title || '';
-    metaImage.value = data.image || '';
-    metaTelegram.value = data.telegram || '';
-  });
-
-  function saveMeta() {
-    db.ref('meta').set({
-      title: metaTitle.value,
-      image: metaImage.value,
-      telegram: metaTelegram.value
-    }).then(() => alert('Meta content saved!'));
-  }
-
-  function addPost() {
-    const title = titleEl.value.trim();
-    const link = linkEl.value.trim();
-    if (!title || !link) {
-      msg.style.color = 'red';
-      msg.textContent = 'Both title and link are required!';
-      return;
+    function saveMeta() {
+      const title = document.getElementById('metaTitle').value.trim();
+      const image = document.getElementById('metaImage').value.trim();
+      const telegram = document.getElementById('metaTelegram').value.trim();
+      db.ref('meta').set({ title, image, telegram });
     }
-    const key = title.replace(/\s+/g, '').toLowerCase();
-    db.ref('posts/' + key).set({ text: title, link: link }).then(() => {
-      msg.style.color = 'green';
-      msg.textContent = '✅ Link added successfully!';
-      titleEl.value = '';
-      linkEl.value = '';
-      loadPosts();
+
+    function addPost() {
+      const title = document.getElementById('title').value.trim();
+      const link = document.getElementById('link').value.trim();
+      if (!title || !link) return alert("Both fields required!");
+      const postKey = Date.now();
+      db.ref('posts/' + postKey).set({ title, link });
+      document.getElementById('title').value = '';
+      document.getElementById('link').value = '';
+    }
+
+    function renderPosts() {
+      const search = document.getElementById('searchInput').value.trim().toLowerCase();
+      db.ref('posts').once('value', snapshot => {
+        const data = snapshot.val() || {};
+        const list = document.getElementById('postList');
+        list.innerHTML = '';
+        Object.entries(data).forEach(([id, post], i) => {
+          if (!post.title.toLowerCase().includes(search) && !post.link.toLowerCase().includes(search)) return;
+          const box = document.createElement('div');
+          box.innerHTML = `
+            <input value="${post.title}" id="title-${id}">
+            <textarea id="link-${id}">${post.link}</textarea><div class="action-row">
+          <button class="save-btn" onclick="saveEdit('${id}')">Save</button>
+          <button class="delete-btn" onclick="deletePost('${id}')">Delete</button>
+        </div>
+      `;
+      list.appendChild(box);
     });
-  }
+  });
+}
 
-  function loadPosts() {
-    db.ref('posts').once('value').then(snapshot => {
-      postsDiv.innerHTML = '';
-      const data = snapshot.val();
-      if (data) {
-        Object.entries(data).forEach(([key, post]) => {
-          const container = document.createElement('div');
-          container.className = 'post-block';
+function saveEdit(id) {
+  const title = document.getElementById('title-' + id).value.trim();
+  const link = document.getElementById('link-' + id).value.trim();
+  db.ref('posts/' + id).set({ title, link });
+}
 
-          const titleInput = document.createElement('input');
-          titleInput.value = post.text;
-          const linkInput = document.createElement('textarea');
-          linkInput.value = post.link;
+function deletePost(id) {
+  if (confirm('Delete this post?')) db.ref('posts/' + id).remove();
+}
 
-          const saveBtn = document.createElement('button');
-          saveBtn.textContent = 'Save';
-          saveBtn.onclick = () => {
-            db.ref('posts/' + key).set({ text: titleInput.value, link: linkInput.value })
-              .then(() => alert('Post updated'));
-          };
+renderPosts();
 
-          const deleteBtn = document.createElement('button');
-          deleteBtn.textContent = 'Delete';
-          deleteBtn.onclick = () => {
-            db.ref('posts/' + key).remove()
-              .then(() => {
-                alert('Deleted');
-                loadPosts();
-              });
-          };
-
-          container.appendChild(titleInput);
-          container.appendChild(linkInput);
-          container.appendChild(saveBtn);
-          container.appendChild(deleteBtn);
-          postsDiv.appendChild(container);
-        });
-      }
-    });
-  }
-
-  loadPosts();
-</script></body>
+  </script>
+</body>
 </html>
