@@ -101,10 +101,7 @@
   function movePost(index, direction) {
     const newIndex = index + direction;
     if (newIndex < 0 || newIndex >= currentPosts.length) return;
-    const temp = currentPosts[index];
-    currentPosts[index] = currentPosts[newIndex];
-    currentPosts[newIndex] = temp;
-
+    [currentPosts[index], currentPosts[newIndex]] = [currentPosts[newIndex], currentPosts[index]];
     const updates = {};
     currentPosts.forEach(post => {
       updates[post.key] = { text: post.text, link: post.link };
@@ -123,20 +120,22 @@
   function filterAndRender() {
     const searchTerm = document.getElementById("search").value.toLowerCase();
     postsDiv.innerHTML = '';
-    currentPosts.filter(p =>
-      p.text.toLowerCase().includes(searchTerm) ||
-      p.link.toLowerCase().includes(searchTerm)
-    ).forEach((post, index) => {
-      const box = document.createElement('div');
-      box.className = 'post-box';
-      box.innerHTML = `
-        <input type="text" value="${post.text}" id="title-${post.key}">
-        <textarea id="link-${post.key}">${post.link}</textarea><button class="save" onclick="savePost('${post.key}')">Save</button>
-    <button class="delete" onclick="deletePost('${post.key}')">Delete</button>
-    <button class="up" onclick="movePost(${index}, -1)">↑</button>
-    <button class="down" onclick="movePost(${index}, 1)">↓</button>
-  `;
-  postsDiv.appendChild(box);
+    currentPosts.forEach((post, index) => {
+      if (
+        post.text.toLowerCase().includes(searchTerm) ||
+        post.link.toLowerCase().includes(searchTerm)
+      ) {
+        const box = document.createElement('div');
+        box.className = 'post-box';
+        box.innerHTML = `
+          <input type="text" value="${post.text}" id="title-${post.key}">
+          <textarea id="link-${post.key}">${post.link}</textarea><button class="save" onclick="savePost('${post.key}')">Save</button>
+      <button class="delete" onclick="deletePost('${post.key}')">Delete</button>
+      <button class="up" onclick="movePost(${index}, -1)">↑</button>
+      <button class="down" onclick="movePost(${index}, 1)">↓</button>
+    `;
+    postsDiv.appendChild(box);
+  }
 });
 
 }
