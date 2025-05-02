@@ -1,0 +1,78 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Public Link Injector</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    textarea {
+      width: 100%;
+      max-width: 500px;
+      height: 100px;
+      margin-bottom: 10px;
+      font-size: 16px;
+      padding: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .msg {
+      margin-top: 10px;
+      color: green;
+    }
+  </style>
+</head>
+<body><h2>Add New Post Link</h2>
+<p>Paste your link and title below, it will be injected into Firebase DB directly.</p><input type="text" id="title" placeholder="Title (e.g. Post #1)" style="width: 100%; max-width: 500px; padding: 10px; margin-bottom: 10px;">
+<textarea id="link" placeholder="Paste your full URL here..."></textarea>
+<button onclick="addPost()">Add Link</button>
+<p class="msg" id="msg"></p><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script><script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
+    authDomain: "trending-viral-links.firebaseapp.com",
+    databaseURL: "https://trending-viral-links-default-rtdb.firebaseio.com",
+    projectId: "trending-viral-links",
+    storageBucket: "trending-viral-links.appspot.com",
+    messagingSenderId: "803173160374",
+    appId: "1:803173160374:web:fc0bb2ab64564f59ee9d17"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  function addPost() {
+    const title = document.getElementById('title').value.trim();
+    const link = document.getElementById('link').value.trim();
+    const msg = document.getElementById('msg');
+
+    if (!title || !link) {
+      msg.style.color = 'red';
+      msg.textContent = 'Both title and link are required!';
+      return;
+    }
+
+    const postKey = title.replace(/\s+/g, '').toLowerCase();
+    db.ref('posts/' + postKey).set({ text: title, link: link })
+      .then(() => {
+        msg.style.color = 'green';
+        msg.textContent = '✅ Link added successfully!';
+        document.getElementById('title').value = '';
+        document.getElementById('link').value = '';
+      })
+      .catch(error => {
+        msg.style.color = 'red';
+        msg.textContent = 'Error: ' + error.message;
+      });
+  }
+</script></body>
+</html>
