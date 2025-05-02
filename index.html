@@ -1,16 +1,17 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Manage Links</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Posts</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
-      background-color: #f4f4f4;
+      background: #f4f4f4;
     }
     h2 {
-      margin-bottom: 10px;
+      color: #333;
     }
     input, textarea {
       width: 100%;
@@ -20,154 +21,126 @@
       font-size: 16px;
     }
     button {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin-right: 5px;
+      padding: 8px 16px;
+      margin: 5px 3px;
+      font-size: 14px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
-    #addBtn {
-      background-color: #4CAF50;
-      color: white;
-    }
-    .msg {
-      margin-top: 10px;
-      color: green;
-    }
-    .link-item {
-      background: #fff;
-      padding: 10px;
-      border: 1px solid #ccc;
-      margin-bottom: 10px;
-    }
-    .link-actions {
-      margin-top: 5px;
-    }
-    .edit-btn, .delete-btn, .up-btn, .down-btn {
-      background-color: #2196F3;
-      color: white;
-    }
-    .delete-btn {
-      background-color: #f44336;
-    }
-    .up-btn, .down-btn {
-      background-color: #9C27B0;
+    .save { background-color: #2196F3; color: white; }
+    .delete { background-color: #f44336; color: white; }
+    .up, .down { background-color: #9c27b0; color: white; }
+    .add { background-color: #4CAF50; color: white; margin-top: 10px; }
+    .post-box {
+      background: white;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      max-width: 500px;
     }
   </style>
 </head>
 <body>
-  <h2>Add New Post Link</h2>
-  <input type="text" id="title" placeholder="Title (e.g. Post #1)" />
-  <textarea id="link" placeholder="Paste your full URL here..."></textarea>
-  <button id="addBtn" onclick="addPost()">Add Link</button>
-  <p class="msg" id="msg"></p>  <h2>All Posts</h2>
-  <div id="posts"></div>  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
-      authDomain: "trending-viral-links.firebaseapp.com",
-      databaseURL: "https://trending-viral-links-default-rtdb.firebaseio.com",
-      projectId: "trending-viral-links",
-      storageBucket: "trending-viral-links.appspot.com",
-      messagingSenderId: "803173160374",
-      appId: "1:803173160374:web:fc0bb2ab64564f59ee9d17"
-    };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const postsDiv = document.getElementById('posts');
-    const msg = document.getElementById('msg');
+<h2>Add New Post Link</h2>
+<input type="text" id="title" placeholder="Title (e.g. Post #1)">
+<textarea id="link" placeholder="Paste your full URL here..."></textarea>
+<button class="add" onclick="addPost()">Add Link</button>
+<p id="msg" style="color:green;"></p>
 
-    function renderPosts(data) {
-      postsDiv.innerHTML = '';
-      Object.keys(data).forEach((key, index) => {
-        const post = data[key];
-        const div = document.createElement('div');
-        div.className = 'link-item';
+<h2>All Posts</h2>
+<div id="posts"></div>
 
-        const input = document.createElement('input');
-        input.value = post.text;
-        input.style.marginBottom = '5px';
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
+    authDomain: "trending-viral-links.firebaseapp.com",
+    databaseURL: "https://trending-viral-links-default-rtdb.firebaseio.com",
+    projectId: "trending-viral-links",
+    storageBucket: "trending-viral-links.appspot.com",
+    messagingSenderId: "803173160374",
+    appId: "1:803173160374:web:fc0bb2ab64564f59ee9d17"
+  };
 
-        const textarea = document.createElement('textarea');
-        textarea.value = post.link;
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const postsRef = db.ref("posts");
+  const postsDiv = document.getElementById("posts");
+  const msg = document.getElementById("msg");
 
-        const actions = document.createElement('div');
-        actions.className = 'link-actions';
-
-        const saveBtn = document.createElement('button');
-        saveBtn.textContent = 'Save';
-        saveBtn.className = 'edit-btn';
-        saveBtn.onclick = () => {
-          db.ref('posts/' + key).set({ text: input.value, link: textarea.value });
-        };
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = 'Delete';
-        deleteBtn.className = 'delete-btn';
-        deleteBtn.onclick = () => {
-          db.ref('posts/' + key).remove();
-        };
-
-        const upBtn = document.createElement('button');
-        upBtn.textContent = '↑';
-        upBtn.className = 'up-btn';
-        upBtn.onclick = () => reorderPosts(key, -1);
-
-        const downBtn = document.createElement('button');
-        downBtn.textContent = '↓';
-        downBtn.className = 'down-btn';
-        downBtn.onclick = () => reorderPosts(key, 1);
-
-        actions.append(saveBtn, deleteBtn, upBtn, downBtn);
-        div.append(input, textarea, actions);
-        postsDiv.appendChild(div);
-      });
-    }
-
-    function reorderPosts(key, direction) {
-      db.ref('posts').once('value').then(snapshot => {
-        const data = snapshot.val();
-        const keys = Object.keys(data);
-        const index = keys.indexOf(key);
-        const newIndex = index + direction;
-        if (newIndex >= 0 && newIndex < keys.length) {
-          const newKeys = [...keys];
-          const temp = newKeys[newIndex];
-          newKeys[newIndex] = newKeys[index];
-          newKeys[index] = temp;
-
-          const reordered = {};
-          newKeys.forEach(k => {
-            reordered[k] = data[k];
-          });
-
-          db.ref('posts').set(reordered);
-        }
-      });
-    }
-
-    function addPost() {
-      const title = document.getElementById('title').value.trim();
-      const link = document.getElementById('link').value.trim();
-      if (!title || !link) {
-        msg.style.color = 'red';
-        msg.textContent = 'Both fields are required!';
-        return;
-      }
-      const postKey = title.replace(/\s+/g, '').toLowerCase();
-      db.ref('posts/' + postKey).set({ text: title, link: link })
-        .then(() => {
-          msg.style.color = 'green';
-          msg.textContent = '✅ Link added successfully!';
-          document.getElementById('title').value = '';
-          document.getElementById('link').value = '';
-        });
-    }
-
-    db.ref('posts').on('value', snapshot => {
-      const data = snapshot.val();
-      if (data) renderPosts(data);
+  function renderPosts(snapshot) {
+    const posts = [];
+    snapshot.forEach(child => {
+      posts.push({ key: child.key, ...child.val() });
     });
-  </script></body>
+    postsDiv.innerHTML = '';
+    posts.forEach((post, index) => {
+      const box = document.createElement('div');
+      box.className = 'post-box';
+      box.innerHTML = `
+        <input type="text" value="${post.text}" id="title-${post.key}">
+        <textarea id="link-${post.key}">${post.link}</textarea>
+        <button class="save" onclick="savePost('${post.key}')">Save</button>
+        <button class="delete" onclick="deletePost('${post.key}')">Delete</button>
+        <button class="up" onclick="movePost(${index}, -1)">↑</button>
+        <button class="down" onclick="movePost(${index}, 1)">↓</button>
+      `;
+      postsDiv.appendChild(box);
+    });
+    window.currentPosts = posts;
+  }
+
+  function addPost() {
+    const title = document.getElementById("title").value.trim();
+    const link = document.getElementById("link").value.trim();
+    if (!title || !link) {
+      msg.style.color = "red";
+      msg.innerText = "Both fields are required!";
+      return;
+    }
+    const newRef = postsRef.push();
+    newRef.set({ text: title, link: link }).then(() => {
+      msg.style.color = "green";
+      msg.innerText = "✅ Link added successfully!";
+      document.getElementById("title").value = '';
+      document.getElementById("link").value = '';
+    });
+  }
+
+  function savePost(key) {
+    const title = document.getElementById(`title-${key}`).value.trim();
+    const link = document.getElementById(`link-${key}`).value.trim();
+    postsRef.child(key).update({ text: title, link: link });
+  }
+
+  function deletePost(key) {
+    if (confirm("Delete this post?")) {
+      postsRef.child(key).remove();
+    }
+  }
+
+  function movePost(index, direction) {
+    const posts = [...window.currentPosts];
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= posts.length) return;
+    const temp = posts[index];
+    posts[index] = posts[newIndex];
+    posts[newIndex] = temp;
+
+    const updates = {};
+    posts.forEach(p => {
+      updates[p.key] = { text: p.text, link: p.link };
+    });
+    postsRef.set(updates);
+  }
+
+  postsRef.on("value", renderPosts);
+</script>
+
+</body>
 </html>
