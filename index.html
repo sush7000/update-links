@@ -1,183 +1,147 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Update Page</title>
   <style>
     body {
-      margin: 0;
       font-family: Arial, sans-serif;
-      background: #f4f4f4;
-    }
-    .container {
-      max-width: 500px;
-      margin: auto;
+      background: #f8f8f8;
+      margin: 0;
       padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     h2 {
-      text-align: center;
       margin-top: 30px;
+      margin-bottom: 10px;
     }
     .card {
       background: white;
       padding: 20px;
       border-radius: 10px;
-      margin: 20px 0;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin: 10px;
+      width: 100%;
+      max-width: 500px;
     }
     input, textarea {
       width: 100%;
-      padding: 12px;
-      margin-bottom: 10px;
-      border-radius: 6px;
+      padding: 10px;
+      margin: 5px 0 10px;
       border: 1px solid #ccc;
+      border-radius: 5px;
       font-size: 16px;
-      box-sizing: border-box;
     }
     button {
-      padding: 10px 18px;
+      padding: 10px 20px;
       font-size: 16px;
       border: none;
-      border-radius: 6px;
+      border-radius: 5px;
+      margin-right: 5px;
       cursor: pointer;
-      margin-right: 6px;
     }
-    .btn-dark {
-      background: #333;
-      color: white;
-    }
-    .btn-green {
-      background: #4CAF50;
-      color: white;
-    }
-    .btn-red {
-      background: #f44336;
-      color: white;
+    .green { background: #4CAF50; color: white; }
+    .blue { background: #2196F3; color: white; }
+    .red { background: #f44336; color: white; }
+    .gray { background: #555; color: white; }
+    .search-bar {
+      max-width: 500px;
+      width: 100%;
     }
   </style>
 </head>
-<body>
-
-<div class="container">
-  <h2>Update Meta Content</h2>
-  <div class="card">
-    <button class="btn-dark" onclick="toggleMeta()">Edit Meta</button>
-    <div id="metaForm" style="display:none;">
-      <input id="pageTitle" placeholder="Page Title">
-      <input id="imageUrl" placeholder="Image URL">
-      <input id="telegramLink" placeholder="Telegram Link">
-      <button class="btn-dark" onclick="saveMeta()">Save Meta</button>
-    </div>
+<body><h2>Update Meta Content</h2>
+<div class="card">
+  <button class="gray" onclick="toggleMeta()">Edit Meta</button>
+  <div id="metaForm" style="display:none">
+    <input type="text" id="pageTitle" placeholder="Page Title">
+    <input type="text" id="pageImage" placeholder="Image URL">
+    <input type="text" id="telegramLink" placeholder="Telegram Link">
+    <button onclick="saveMeta()">Save Meta</button>
   </div>
+</div><h2>Add New Post Link</h2>
+<div class="card">
+  <input type="text" id="title" placeholder="Title (e.g. Post #1)">
+  <textarea id="link" placeholder="Paste your full URL here..."></textarea>
+  <input type="text" id="image" placeholder="Preview Image URL (optional)">
+  <button class="green" onclick="addPost()">Add Link</button>
+</div><h2>Search Posts</h2>
+<div class="card search-bar">
+  <input type="text" id="searchInput" placeholder="Search by title or link..." oninput="renderPosts()">
+</div><h2>All Posts</h2>
+<div id="posts"></div><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script><script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
+  authDomain: "trending-viral-links.firebaseapp.com",
+  databaseURL: "https://trending-viral-links-default-rtdb.firebaseio.com",
+  projectId: "trending-viral-links",
+  storageBucket: "trending-viral-links.appspot.com",
+  messagingSenderId: "803173160374",
+  appId: "1:803173160374:web:fc0bb2ab64564f59ee9d17"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-  <h2>Add New Post Link</h2>
-  <div class="card">
-    <input id="titleInput" placeholder="Title (e.g. Post #1)">
-    <textarea id="linkInput" placeholder="Paste your full URL here..."></textarea>
-    <button class="btn-green" onclick="addPost()">Add Link</button>
-  </div>
+function toggleMeta() {
+  document.getElementById("metaForm").style.display = 'block';
+}
+function saveMeta() {
+  const title = document.getElementById("pageTitle").value.trim();
+  const image = document.getElementById("pageImage").value.trim();
+  const telegram = document.getElementById("telegramLink").value.trim();
+  db.ref("meta").set({ title, image, telegram });
+}
 
-  <h2>Search Posts</h2>
-  <div class="card">
-    <input id="searchInput" placeholder="Search by title or link..." oninput="renderPosts()">
-  </div>
+function addPost() {
+  const title = document.getElementById("title").value.trim();
+  const link = document.getElementById("link").value.trim();
+  const image = document.getElementById("image").value.trim();
+  if (!title || !link) return;
+  const key = title.replace(/\s+/g, '').toLowerCase();
+  db.ref('posts/' + key).set({ text: title, link: link, image: image || '' });
+  document.getElementById("title").value = '';
+  document.getElementById("link").value = '';
+  document.getElementById("image").value = '';
+}
 
-  <h2>All Posts</h2>
-  <div id="allPosts"></div>
-</div>
-
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
-    authDomain: "trending-viral-links.firebaseapp.com",
-    databaseURL: "https://trending-viral-links-default-rtdb.firebaseio.com",
-    projectId: "trending-viral-links",
-    storageBucket: "trending-viral-links.appspot.com",
-    messagingSenderId: "803173160374",
-    appId: "1:803173160374:web:fc0bb2ab64564f59ee9d17"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-
-  function toggleMeta() {
-    const form = document.getElementById('metaForm');
-    form.style.display = form.style.display === 'none' ? 'block' : 'none';
-  }
-
-  function saveMeta() {
-    const title = document.getElementById('pageTitle').value.trim();
-    const image = document.getElementById('imageUrl').value.trim();
-    const telegram = document.getElementById('telegramLink').value.trim();
-
-    db.ref("meta").set({ title, image, telegram })
-      .then(() => alert("Meta updated!"))
-      .catch(e => alert("Error: " + e.message));
-  }
-
-  function addPost() {
-    const title = document.getElementById('titleInput').value.trim();
-    const link = document.getElementById('linkInput').value.trim();
-    if (!title || !link) return alert("Both fields required!");
-
-    const key = title.replace(/\s+/g, '').toLowerCase();
-    db.ref('posts/' + key).set({ text: title, link })
-      .then(() => {
-        document.getElementById('titleInput').value = '';
-        document.getElementById('linkInput').value = '';
-        renderPosts();
-      });
-  }
-
-  function deletePost(key) {
-    if (confirm("Delete this post?")) {
-      db.ref('posts/' + key).remove().then(renderPosts);
-    }
-  }
-
-  function updatePost(key) {
-    const newTitle = document.getElementById(`title-${key}`).value.trim();
-    const newLink = document.getElementById(`link-${key}`).value.trim();
-    db.ref('posts/' + key).set({ text: newTitle, link: newLink }).then(renderPosts);
-  }
-
-  function renderPosts() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    db.ref('posts').once('value', snapshot => {
-      const data = snapshot.val();
-      const container = document.getElementById('allPosts');
-      container.innerHTML = '';
-
-      if (data) {
-        Object.keys(data).forEach(key => {
-          const post = data[key];
-          if (
-            post.text.toLowerCase().includes(search) ||
-            post.link.toLowerCase().includes(search)
-          ) {
-            const card = document.createElement('div');
-            card.className = 'card';
-
-            card.innerHTML = `
-              <input id="title-${key}" value="${post.text}">
-              <textarea id="link-${key}">${post.link}</textarea>
-              <button class="btn-dark" onclick="updatePost('${key}')">Save</button>
-              <button class="btn-red" onclick="deletePost('${key}')">Delete</button>
-            `;
-
-            container.appendChild(card);
-          }
-        });
+function renderPosts() {
+  const search = document.getElementById("searchInput").value.trim().toLowerCase();
+  db.ref('posts').once('value', snapshot => {
+    const data = snapshot.val() || {};
+    const container = document.getElementById("posts");
+    container.innerHTML = '';
+    Object.keys(data).forEach(key => {
+      const { text, link, image } = data[key];
+      if (text.toLowerCase().includes(search) || link.toLowerCase().includes(search)) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const t = document.createElement('input');
+        t.value = text;
+        const l = document.createElement('textarea');
+        l.value = link;
+        const img = document.createElement('input');
+        img.value = image || '';
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'blue';
+        saveBtn.innerText = 'Save';
+        saveBtn.onclick = () => db.ref('posts/' + key).set({ text: t.value, link: l.value, image: img.value });
+        const delBtn = document.createElement('button');
+        delBtn.className = 'red';
+        delBtn.innerText = 'Delete';
+        delBtn.onclick = () => db.ref('posts/' + key).remove().then(() => renderPosts());
+        card.appendChild(t);
+        card.appendChild(l);
+        card.appendChild(img);
+        card.appendChild(saveBtn);
+        card.appendChild(delBtn);
+        container.appendChild(card);
       }
     });
-  }
+  });
+}
 
-  renderPosts();
-</script>
-
-</body>
+renderPosts();
+</script></body>
 </html>
