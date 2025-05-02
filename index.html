@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,21 +8,24 @@
       font-family: Arial, sans-serif;
       background: #f9f9f9;
       margin: 0;
-      padding: 20px;
+      padding: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
-    h2 {
+    .container {
+      width: 95%;
+      max-width: 600px;
       margin-top: 20px;
+    }
+    h2 {
+      text-align: center;
       color: #333;
     }
     .box {
-      width: 95%;
-      max-width: 600px;
       background: white;
       padding: 20px;
-      margin: 20px 0;
+      margin: 15px auto;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       border-radius: 10px;
     }
@@ -43,47 +45,43 @@
       border-radius: 6px;
       cursor: pointer;
     }
+    .metaBtn, .toggleBtn {
+      background: #555;
+      color: white;
+    }
     .add { background: #4CAF50; color: white; }
     .save { background: #2196F3; color: white; }
     .del { background: #f44336; color: white; }
-    .reorder { background: #9C27B0; color: white; }
-    .metaBtn { background: #555; color: white; }
     .search {
       background: #e0e0e0;
       margin-bottom: 10px;
       padding: 10px;
       border-radius: 8px;
     }
+    .hidden { display: none; }
   </style>
 </head>
-<body>
-
-<h2>Update Meta Content</h2>
-<div class="box">
-  <input type="text" id="metaTitle" placeholder="Page Title">
-  <input type="text" id="metaImage" placeholder="Image URL">
-  <input type="text" id="metaTelegram" placeholder="Telegram Link">
-  <button class="metaBtn" onclick="saveMeta()">Save Meta</button>
-</div>
-
-<h2>Add New Post Link</h2>
-<div class="box">
-  <input type="text" id="title" placeholder="Title (e.g. Post #1)">
-  <textarea id="link" placeholder="Paste your full URL here..."></textarea>
-  <button class="add" onclick="addPost()">Add Link</button>
-</div>
-
-<h2>Search Posts</h2>
-<div class="box">
-  <input class="search" type="text" id="searchInput" placeholder="Search by title or link..." oninput="filterPosts()">
-</div>
-
-<h2>All Posts</h2>
-<div id="posts" class="box"></div>
-
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script>
+<body><div class="container">
+  <h2>Update Meta Content</h2>
+  <div class="box">
+    <button class="toggleBtn" onclick="toggleMetaBox()">Edit Meta</button>
+    <div id="metaBox" class="hidden">
+      <input type="text" id="metaTitle" placeholder="Page Title">
+      <input type="text" id="metaImage" placeholder="Image URL">
+      <input type="text" id="metaTelegram" placeholder="Telegram Link">
+      <button class="metaBtn" onclick="saveMeta()">Save Meta</button>
+    </div>
+  </div>  <h2>Add New Post Link</h2>
+  <div class="box">
+    <input type="text" id="title" placeholder="Title (e.g. Post #1)">
+    <textarea id="link" placeholder="Paste your full URL here..."></textarea>
+    <button class="add" onclick="addPost()">Add Link</button>
+  </div>  <h2>Search Posts</h2>
+  <div class="box">
+    <input class="search" type="text" id="searchInput" placeholder="Search by title or link..." oninput="filterPosts()">
+  </div>  <h2>All Posts</h2>
+  <div id="posts" class="box"></div>
+</div><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script><script>
   const firebaseConfig = {
     apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
     authDomain: "trending-viral-links.firebaseapp.com",
@@ -98,6 +96,11 @@
 
   const postsDiv = document.getElementById("posts");
   const searchInput = document.getElementById("searchInput");
+
+  function toggleMetaBox() {
+    const box = document.getElementById("metaBox");
+    box.classList.toggle("hidden");
+  }
 
   function saveMeta() {
     db.ref("meta").set({
@@ -134,44 +137,23 @@
       const div = document.createElement("div");
       div.innerHTML = `
         <input type="text" value="${post.text}" id="t_${id}">
-        <textarea id="l_${id}">${post.link}</textarea>
-        <div>
-          <button class="save" onclick="savePost('${id}')">Save</button>
-          <button class="del" onclick="deletePost('${id}')">Delete</button>
-        </div>
-      `;
-      postsDiv.appendChild(div);
-    });
-  }
+        <textarea id="l_${id}">${post.link}</textarea><div>
+      <button class="save" onclick="savePost('${id}')">Save</button>
+      <button class="del" onclick="deletePost('${id}')">Delete</button>
+    </div>
+  `;
+  postsDiv.appendChild(div);
+});
 
-  function savePost(id) {
-    const text = document.getElementById("t_" + id).value;
-    const link = document.getElementById("l_" + id).value;
-    db.ref("posts/" + id).set({ text, link });
-  }
+}
 
-  function deletePost(id) {
-    if (confirm("Delete this post?")) {
-      db.ref("posts/" + id).remove();
-    }
-  }
+function savePost(id) { const text = document.getElementById("t_" + id).value; const link = document.getElementById("l_" + id).value; db.ref("posts/" + id).set({ text, link }); }
 
-  function filterPosts() {
-    const q = searchInput.value.toLowerCase();
-    db.ref("posts").once("value").then(snap => {
-      const all = snap.val();
-      const filtered = {};
-      Object.entries(all || {}).forEach(([id, p]) => {
-        if (p.text.toLowerCase().includes(q) || p.link.toLowerCase().includes(q)) {
-          filtered[id] = p;
-        }
-      });
-      renderPosts(filtered);
-    });
-  }
+function deletePost(id) { if (confirm("Delete this post?")) { db.ref("posts/" + id).remove(); } }
 
-  db.ref("posts").on("value", snap => renderPosts(snap.val()));
-  loadMeta();
-</script>
+function filterPosts() { const q = searchInput.value.toLowerCase(); db.ref("posts").once("value").then(snap => { const all = snap.val(); const filtered = {}; Object.entries(all || {}).forEach(([id, p]) => { if (p.text.toLowerCase().includes(q) || p.link.toLowerCase().includes(q)) { filtered[id] = p; } }); renderPosts(filtered); }); }
+
+db.ref("posts").on("value", snap => renderPosts(snap.val())); loadMeta(); </script>
+
 </body>
 </html>
