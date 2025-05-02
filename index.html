@@ -3,6 +3,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Post Link Manager</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }
     textarea, input { width: 100%; max-width: 500px; margin-bottom: 10px; font-size: 16px; padding: 10px; }
@@ -15,16 +16,23 @@
     .msg { color: green; margin-top: 10px; }
     .hidden { display: none; }
     #analytics { margin-top: 20px; background: white; padding: 15px; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.1); max-width: 600px; }
+    #chartModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 9999; }
+    #chartBox { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 600px; }
+    #closeChart { float: right; background: red; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
   </style>
 </head>
 <body><h2>Add New Post Link</h2>
 <input type="text" id="title" placeholder="Title (e.g. Post #1)">
 <textarea id="link" placeholder="Paste your full URL here..."></textarea>
 <button class="green" onclick="addPost()">Add Link</button>
-<p class="msg" id="msg"></p><h2>Search Posts</h2>
-<input type="text" id="search" onkeyup="searchPosts()" placeholder="Search by title or link..."><h2>Post Analytics</h2>
-<div id="analytics"></div><h2>All Posts</h2>
-<div id="posts"></div><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script><script>
+<p class="msg" id="msg"></p><h2>All Posts</h2>
+<div id="posts"></div><div id="chartModal">
+  <div id="chartBox">
+    <button id="closeChart">Close</button>
+    <h3>Post View Analysis</h3>
+    <canvas id="viewChart" width="100%" height="300"></canvas>
+  </div>
+</div><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script><script>
   const firebaseConfig = {
     apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
     authDomain: "trending-viral-links.firebaseapp.com",
@@ -39,61 +47,62 @@
   const db = firebase.database();
   const postsContainer = document.getElementById('posts');
   const msg = document.getElementById('msg');
-  const analyticsBox = document.getElementById('analytics');
 
   function renderPosts(data) {
     postsContainer.innerHTML = '';
-    const stats = { total: 0, totalViews: 0, topPost: { text: '', views: 0 } };
     Object.entries(data).forEach(([key, post]) => {
-      stats.total++;
-      stats.totalViews += post.views || 0;
-      if ((post.views || 0) > stats.topPost.views) {
-        stats.topPost = { text: post.text, views: post.views || 0 };
-      }
-
       const div = document.createElement('div');
       div.className = 'post-box';
       div.setAttribute('data-key', key);
       div.innerHTML = `
         <input value="${post.text}" onchange="editTitle('${key}', this.value)"><br>
-        <textarea onchange="editLink('${key}', this.value)">${post.link}</textarea><p>Views: ${post.views || 0}</p>
-    <button class="blue" onclick="savePost('${key}')">Save</button>
+        <textarea onchange="editLink('${key}', this.value)">${post.link}</textarea><p>Views: ${post.views || 0} <button class="blue" onclick="showAnalytics('${key}')">View Analysis</button></p>
+    <button class="green" onclick="trackViewAndVisit('${key}', '${post.link}')">Visit</button>
     <button class="red" onclick="deletePost('${key}')">Delete</button>
-    <button class="purple" onclick="movePost('${key}', -1)">↑</button>
-    <button class="purple" onclick="movePost('${key}', 1)">↓</button>
   `;
   postsContainer.appendChild(div);
 });
-analyticsBox.innerHTML = `
-  <p><strong>Total Posts:</strong> ${stats.total}</p>
-  <p><strong>Total Views:</strong> ${stats.totalViews}</p>
-  <p><strong>Top Post:</strong> ${stats.topPost.text} (${stats.topPost.views} views)</p>
-`;
 
 }
 
 function fetchPosts() { db.ref('posts').on('value', (snapshot) => { const data = snapshot.val() || {}; renderPosts(data); }); }
 
-function addPost() { const title = document.getElementById('title').value.trim(); const link = document.getElementById('link').value.trim(); if (!title || !link) return; const postKey = title.replace(/\s+/g, '').toLowerCase(); db.ref('posts/' + postKey).set({ text: title, link: link, views: 0 }).then(() => { msg.textContent = '✅ Link added successfully!'; setTimeout(() => msg.textContent = '', 3000); document.getElementById('title').value = ''; document.getElementById('link').value = ''; }); }
+function addPost() { const title = document.getElementById('title').value.trim(); const link = document.getElementById('link').value.trim(); if (!title || !link) return; const postKey = title.replace(/\s+/g, '').toLowerCase(); db.ref('posts/' + postKey).set({ text: title, link: link, views: 0 }); document.getElementById('title').value = ''; document.getElementById('link').value = ''; msg.textContent = '✅ Link added'; setTimeout(() => msg.textContent = '', 3000); }
+
+function trackViewAndVisit(key, url) { const today = new Date().toISOString().split('T')[0]; db.ref('posts/' + key + '/views').transaction(n => (n || 0) + 1); db.ref(views_by_date/${key}/${today}).transaction(n => (n || 0) + 1); window.open(url, '_blank'); }
+
+function deletePost(key) { db.ref('posts/' + key).remove(); }
 
 function editTitle(key, newText) { db.ref('posts/' + key + '/text').set(newText); }
 
 function editLink(key, newLink) { db.ref('posts/' + key + '/link').set(newLink); }
 
-function savePost(key) { msg.textContent = '✅ Post updated'; setTimeout(() => msg.textContent = '', 3000); }
+function showAnalytics(key) { db.ref('views_by_date/' + key).once('value').then(snapshot => { const data = snapshot.val() || {}; const labels = Object.keys(data); const views = Object.values(data);
 
-function deletePost(key) { db.ref('posts/' + key).remove(); }
+const ctx = document.getElementById('viewChart').getContext('2d');
+  if (window.chartInstance) window.chartInstance.destroy();
 
-function searchPosts() { const searchVal = document.getElementById('search').value.toLowerCase(); const boxes = document.querySelectorAll('.post-box'); boxes.forEach(box => { const text = box.querySelector('input').value.toLowerCase(); const link = box.querySelector('textarea').value.toLowerCase(); box.style.display = (text.includes(searchVal) || link.includes(searchVal)) ? '' : 'none'; }); }
-
-function movePost(key, direction) { db.ref('posts').once('value').then(snapshot => { const data = snapshot.val(); const keys = Object.keys(data); const index = keys.indexOf(key); const newIndex = index + direction; if (newIndex < 0 || newIndex >= keys.length) return; const reordered = [...keys]; const temp = reordered[index]; reordered[index] = reordered[newIndex]; reordered[newIndex] = temp;
-
-const newData = {};
-  reordered.forEach(k => newData[k] = data[k]);
-  db.ref('posts').set(newData);
+  window.chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Views by Date',
+        data: views,
+        backgroundColor: 'rgba(54, 162, 235, 0.7)'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } }
+    }
+  });
+  document.getElementById('chartModal').style.display = 'flex';
 });
 
 }
+
+document.getElementById('closeChart').onclick = () => { document.getElementById('chartModal').style.display = 'none'; };
 
 fetchPosts(); </script>
 
