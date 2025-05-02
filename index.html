@@ -1,107 +1,153 @@
 <!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Edit Links</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Link Manager</title>
   <style>
     body {
       font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      margin: 0;
       padding: 20px;
-      background-color: #f4f4f4;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     h2 {
+      text-align: center;
+    }
+    .input-box {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
       margin-bottom: 20px;
     }
-    textarea, input[type=text] {
-      width: 100%;
-      max-width: 500px;
-      margin-bottom: 10px;
-      font-size: 16px;
+    input, textarea {
       padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 100%;
     }
     button {
-      padding: 10px 20px;
+      padding: 10px;
       font-size: 16px;
-      background-color: #4CAF50;
-      color: white;
+      background: #007bff;
+      color: #fff;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      margin-bottom: 20px;
     }
-    .post-box {
-      background: #fff;
-      padding: 15px;
-      margin-bottom: 10px;
+    button:hover {
+      background: #0056b3;
+    }
+    .post {
+      background: #f1f1f1;
+      padding: 10px;
       border-radius: 5px;
-      box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    .msg {
-      color: green;
+    .post a {
+      color: #007bff;
+      word-break: break-all;
+    }
+    .edit-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 3px;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+    .edit-btn:hover {
+      background: #218838;
     }
   </style>
 </head>
 <body>
-<h2>Edit or View Links</h2>
-<div id="posts"></div>
-<p class="msg" id="msg"></p><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script><script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
-    authDomain: "trending-viral-links.firebaseapp.com",
-    databaseURL: "https://trending-viral-links-default-rtdb.firebaseio.com",
-    projectId: "trending-viral-links",
-    storageBucket: "trending-viral-links.appspot.com",
-    messagingSenderId: "803173160374",
-    appId: "1:803173160374:web:fc0bb2ab64564f59ee9d17"
-  };
+  <div class="container">
+    <h2>Manage Your Links</h2>
+    <div class="input-box">
+      <input type="text" id="title" placeholder="Enter Title" />
+      <textarea id="link" placeholder="Paste your link..."></textarea>
+      <button onclick="addPost()">Add New Post</button>
+      <div id="msg"></div>
+    </div>
+    <div id="posts"></div>
+  </div>  <!-- Firebase -->  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
+      authDomain: "trending-viral-links.firebaseapp.com",
+      databaseURL: "https://trending-viral-links-default-rtdb.firebaseio.com",
+      projectId: "trending-viral-links",
+      storageBucket: "trending-viral-links.appspot.com",
+      messagingSenderId: "803173160374",
+      appId: "1:803173160374:web:fc0bb2ab64564f59ee9d17"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-  const postsDiv = document.getElementById('posts');
-  const msg = document.getElementById('msg');
+    const postsContainer = document.getElementById("posts");
+    const msg = document.getElementById("msg");
 
-  function loadPosts() {
-    db.ref('posts').once('value').then(snapshot => {
-      const data = snapshot.val();
-      postsDiv.innerHTML = '';
-      if (data) {
-        Object.entries(data).forEach(([key, value]) => {
-          const div = document.createElement('div');
-          div.className = 'post-box';
-          div.innerHTML = `
-            <strong>${key}</strong><br>
-            <input type="text" value="${value.text}" id="title_${key}" placeholder="Title"><br>
-            <textarea id="link_${key}" placeholder="Link">${value.link}</textarea><br><button onclick="save('${key}')">Save</button>
-      `;
-      postsDiv.appendChild(div);
-    });
-  }
-});
+    function loadPosts() {
+      db.ref("posts").once("value", (snapshot) => {
+        postsContainer.innerHTML = "";
+        const data = snapshot.val();
+        if (data) {
+          Object.entries(data).forEach(([key, post]) => {
+            const div = document.createElement("div");
+            div.className = "post";
+            div.innerHTML = `
+              <div>
+                <strong>${post.text}</strong><br>
+                <a href="${post.link}" target="_blank">${post.link}</a>
+              </div>
+              <button class="edit-btn" onclick="editPost('${key}', '${post.text}', '${post.link}')">Edit</button>
+            `;
+            postsContainer.appendChild(div);
+          });
+        }
+      });
+    }
 
-}
+    function addPost() {
+      const title = document.getElementById("title").value.trim();
+      const link = document.getElementById("link").value.trim();
+      if (!title || !link) {
+        msg.textContent = "Both title and link required!";
+        msg.style.color = "red";
+        return;
+      }
+      const key = title.replace(/\s+/g, "").toLowerCase();
+      db.ref("posts/" + key).set({ text: title, link: link })
+        .then(() => {
+          msg.textContent = "✔️ Link added successfully!";
+          msg.style.color = "green";
+          document.getElementById("title").value = "";
+          document.getElementById("link").value = "";
+          loadPosts();
+        });
+    }
 
-function save(id) { const newText = document.getElementById('title_' + id).value.trim(); const newLink = document.getElementById('link_' + id).value.trim();
+    function editPost(key, oldTitle, oldLink) {
+      const newTitle = prompt("Edit title:", oldTitle);
+      const newLink = prompt("Edit link:", oldLink);
+      if (newTitle && newLink) {
+        db.ref("posts/" + key).set({ text: newTitle, link: newLink })
+          .then(loadPosts);
+      }
+    }
 
-if (!newText || !newLink) {
-  msg.style.color = 'red';
-  msg.textContent = 'Fields cannot be empty!';
-  return;
-}
-
-db.ref('posts/' + id).set({ text: newText, link: newLink })
-  .then(() => {
-    msg.style.color = 'green';
-    msg.textContent = '✅ Updated!';
-    setTimeout(() => msg.textContent = '', 3000);
-  })
-  .catch(err => {
-    msg.style.color = 'red';
-    msg.textContent = 'Error: ' + err.message;
-  });
-
-}
-
-loadPosts(); </script>
-
-</body>
+    loadPosts();
+  </script></body>
 </html>
