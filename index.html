@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Manage Posts</title>
   <style>
     body {
@@ -10,9 +10,7 @@
       padding: 20px;
       background: #f4f4f4;
     }
-    h2 {
-      color: #333;
-    }
+    h2 { color: #333; }
     input, textarea {
       width: 100%;
       max-width: 500px;
@@ -73,13 +71,15 @@
   const postsDiv = document.getElementById("posts");
   const msg = document.getElementById("msg");
 
+  let currentPosts = [];
+
   function renderPosts(snapshot) {
-    const posts = [];
+    currentPosts = [];
     snapshot.forEach(child => {
-      posts.push({ key: child.key, ...child.val() });
+      currentPosts.push({ key: child.key, ...child.val() });
     });
     postsDiv.innerHTML = '';
-    posts.forEach((post, index) => {
+    currentPosts.forEach((post, index) => {
       const box = document.createElement('div');
       box.className = 'post-box';
       box.innerHTML = `
@@ -92,7 +92,6 @@
       `;
       postsDiv.appendChild(box);
     });
-    window.currentPosts = posts;
   }
 
   function addPost() {
@@ -125,15 +124,16 @@
   }
 
   function movePost(index, direction) {
-    const posts = [...window.currentPosts];
     const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= posts.length) return;
-    const temp = posts[index];
-    posts[index] = posts[newIndex];
-    posts[newIndex] = temp;
+    if (newIndex < 0 || newIndex >= currentPosts.length) return;
 
+    // Swap elements
+    const reordered = [...currentPosts];
+    [reordered[index], reordered[newIndex]] = [reordered[newIndex], reordered[index]];
+
+    // Rewrite all to Firebase
     const updates = {};
-    posts.forEach(p => {
+    reordered.forEach(p => {
       updates[p.key] = { text: p.text, link: p.link };
     });
     postsRef.set(updates);
