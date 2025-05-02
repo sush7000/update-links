@@ -1,62 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manage Posts</title>
+  <title>Post Link Manager</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f4f4f4;
-    }
-    h2 {
-      color: #333;
-    }
-    input, textarea {
-      width: 100%;
-      max-width: 500px;
-      padding: 10px;
-      margin-bottom: 10px;
-      font-size: 16px;
-    }
-    button {
-      padding: 8px 16px;
-      margin: 5px 3px;
-      font-size: 14px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .save { background-color: #2196F3; color: white; }
-    .delete { background-color: #f44336; color: white; }
-    .up, .down { background-color: #9c27b0; color: white; }
-    .add { background-color: #4CAF50; color: white; margin-top: 10px; }
-    .post-box {
-      background: white;
-      padding: 15px;
-      margin-bottom: 15px;
-      border-radius: 10px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      max-width: 500px;
-    }
+    body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }
+    textarea, input { width: 100%; max-width: 500px; margin-bottom: 10px; font-size: 16px; padding: 10px; }
+    button { padding: 10px 20px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; }
+    .green { background-color: #4CAF50; color: white; }
+    .blue { background-color: #2196F3; color: white; }
+    .red { background-color: #f44336; color: white; }
+    .purple { background-color: #9c27b0; color: white; }
+    .post-box { background: #fff; padding: 10px; margin: 10px 0; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+    .msg { color: green; margin-top: 10px; }
+    .hidden { display: none; }
   </style>
 </head>
-<body>
-
-<h2>Add New Post Link</h2>
+<body><h2>Add New Post Link</h2>
 <input type="text" id="title" placeholder="Title (e.g. Post #1)">
 <textarea id="link" placeholder="Paste your full URL here..."></textarea>
-<button class="add" onclick="addPost()">Add Link</button>
-<p id="msg" style="color:green;"></p>
-
-<h2>All Posts</h2>
-<div id="posts"></div>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script>
+<button class="green" onclick="addPost()">Add Link</button>
+<p class="msg" id="msg"></p><h2>Search Posts</h2>
+<input type="text" id="search" onkeyup="searchPosts()" placeholder="Search by title or link..."><h2>All Posts</h2>
+<div id="posts"></div><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script><script>
   const firebaseConfig = {
     apiKey: "AIzaSyDeh2YAbTvupfNhEbT1uDBvoNiW1KQU9-o",
     authDomain: "trending-viral-links.firebaseapp.com",
@@ -69,78 +35,52 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
-  const postsRef = db.ref("posts");
-  const postsDiv = document.getElementById("posts");
-  const msg = document.getElementById("msg");
+  const postsContainer = document.getElementById('posts');
+  const msg = document.getElementById('msg');
 
-  function renderPosts(snapshot) {
-    const posts = [];
-    snapshot.forEach(child => {
-      posts.push({ key: child.key, ...child.val() });
-    });
-    postsDiv.innerHTML = '';
-    posts.forEach((post, index) => {
-      const box = document.createElement('div');
-      box.className = 'post-box';
-      box.innerHTML = `
-        <input type="text" value="${post.text}" id="title-${post.key}">
-        <textarea id="link-${post.key}">${post.link}</textarea>
-        <button class="save" onclick="savePost('${post.key}')">Save</button>
-        <button class="delete" onclick="deletePost('${post.key}')">Delete</button>
-        <button class="up" onclick="movePost(${index}, -1)">↑</button>
-        <button class="down" onclick="movePost(${index}, 1)">↓</button>
-      `;
-      postsDiv.appendChild(box);
-    });
-    window.currentPosts = posts;
-  }
+  function renderPosts(data) {
+    postsContainer.innerHTML = '';
+    Object.entries(data).forEach(([key, post]) => {
+      const div = document.createElement('div');
+      div.className = 'post-box';
+      div.setAttribute('data-key', key);
+      div.innerHTML = `
+        <input value="${post.text}" onchange="editTitle('${key}', this.value)"><br>
+        <textarea onchange="editLink('${key}', this.value)">${post.link}</textarea><p>Views: ${post.views || 0}</p>
+    <button class="blue" onclick="savePost('${key}')">Save</button>
+    <button class="red" onclick="deletePost('${key}')">Delete</button>
+    <button class="purple" onclick="movePost('${key}', -1)">↑</button>
+    <button class="purple" onclick="movePost('${key}', 1)">↓</button>
+  `;
+  postsContainer.appendChild(div);
+});
 
-  function addPost() {
-    const title = document.getElementById("title").value.trim();
-    const link = document.getElementById("link").value.trim();
-    if (!title || !link) {
-      msg.style.color = "red";
-      msg.innerText = "Both fields are required!";
-      return;
-    }
-    const newRef = postsRef.push();
-    newRef.set({ text: title, link: link }).then(() => {
-      msg.style.color = "green";
-      msg.innerText = "✅ Link added successfully!";
-      document.getElementById("title").value = '';
-      document.getElementById("link").value = '';
-    });
-  }
+}
 
-  function savePost(key) {
-    const title = document.getElementById(`title-${key}`).value.trim();
-    const link = document.getElementById(`link-${key}`).value.trim();
-    postsRef.child(key).update({ text: title, link: link });
-  }
+function fetchPosts() { db.ref('posts').on('value', (snapshot) => { const data = snapshot.val() || {}; renderPosts(data); }); }
 
-  function deletePost(key) {
-    if (confirm("Delete this post?")) {
-      postsRef.child(key).remove();
-    }
-  }
+function addPost() { const title = document.getElementById('title').value.trim(); const link = document.getElementById('link').value.trim(); if (!title || !link) return; const postKey = title.replace(/\s+/g, '').toLowerCase(); db.ref('posts/' + postKey).set({ text: title, link: link, views: 0 }).then(() => { msg.textContent = '✅ Link added successfully!'; setTimeout(() => msg.textContent = '', 3000); document.getElementById('title').value = ''; document.getElementById('link').value = ''; }); }
 
-  function movePost(index, direction) {
-    const posts = [...window.currentPosts];
-    const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= posts.length) return;
-    const temp = posts[index];
-    posts[index] = posts[newIndex];
-    posts[newIndex] = temp;
+function editTitle(key, newText) { db.ref('posts/' + key + '/text').set(newText); }
 
-    const updates = {};
-    posts.forEach(p => {
-      updates[p.key] = { text: p.text, link: p.link };
-    });
-    postsRef.set(updates);
-  }
+function editLink(key, newLink) { db.ref('posts/' + key + '/link').set(newLink); }
 
-  postsRef.on("value", renderPosts);
-</script>
+function savePost(key) { msg.textContent = '✅ Post updated'; setTimeout(() => msg.textContent = '', 3000); }
+
+function deletePost(key) { db.ref('posts/' + key).remove(); }
+
+function searchPosts() { const searchVal = document.getElementById('search').value.toLowerCase(); const boxes = document.querySelectorAll('.post-box'); boxes.forEach(box => { const text = box.querySelector('input').value.toLowerCase(); const link = box.querySelector('textarea').value.toLowerCase(); box.style.display = (text.includes(searchVal) || link.includes(searchVal)) ? '' : 'none'; }); }
+
+function movePost(key, direction) { db.ref('posts').once('value').then(snapshot => { const data = snapshot.val(); const keys = Object.keys(data); const index = keys.indexOf(key); const newIndex = index + direction; if (newIndex < 0 || newIndex >= keys.length) return; const reordered = [...keys]; const temp = reordered[index]; reordered[index] = reordered[newIndex]; reordered[newIndex] = temp;
+
+const newData = {};
+  reordered.forEach(k => newData[k] = data[k]);
+  db.ref('posts').set(newData);
+});
+
+}
+
+fetchPosts(); </script>
 
 </body>
 </html>
